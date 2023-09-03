@@ -1,2 +1,8 @@
-# Emilia
-Js wa_b0t out of love
+## Moon WhatsApp Bot
+## How to deploy?
+coming soon 🗿
+
+```XD Join Group😂```
+
+## Group WhatsApp Update Info
+* [`WhatsApp Group`](https://chat.whatsapp.com/DB0jUKrezufIDNLxta4V3B)
