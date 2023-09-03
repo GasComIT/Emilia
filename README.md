@@ -1,4 +1,4 @@
-## Moon WhatsApp Bot
+## Project Emilia
 ## How to deploy?
 coming soon 🗿
 
