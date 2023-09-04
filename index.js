@@ -26,8 +26,8 @@ const { exec } = require("child_process");
 
 const fakeThumb = fs.readFileSync("./database/media/fakeThumb.jpg");
 const parseRes = require("./database/functions/parseres.js");
-const resolveDesuUrl = require("./resolve-desu-url.js");
-const resolveBufferStream = require("./resolve-buffer-stream.js");
+const resolveDesuUrl = require("./database/functions/resolve-desu-url.js");
+const resolveBufferStream = require("./database/functions/resolve-buffer-stream.js");
 const scraper = require("./database/functions/scraperTT.js");
 
 const color = (text, color) => {
@@ -35,13 +35,13 @@ const color = (text, color) => {
 };
 
 const start = async () => {
-  const { state, saveCreds } = await useMultiFileAuthState("session");
+  const { state, saveCreds } = await useMultiFileAuthState("emilia");
 
   const level = pino({ level: "silent" });
   const sock = WAConnection({
     logger: level,
     printQRInTerminal: true,
-    browser: ["Moon", "Firefox", "3.0.0"],
+    browser: ["Emilia", "Firefox", "3.0.0"],
     auth: {
       creds: state.creds,
       keys: makeCacheableSignalKeyStore(state.keys, level),
@@ -54,12 +54,12 @@ const start = async () => {
       if (lastDisconnect.error.output.statusCode !== 401) {
         start();
       } else {
-        exec("rm -rf session");
-        console.error("Scan QR!");
+        exec("rm -rf emilia");
+        console.error("Scan QR! to log in to Emilia");
         start();
       }
     } else if (connection === "open") {
-      console.log("Bot connected!");
+      console.log("Bot Emilia connected!");
     }
   });
 
@@ -68,7 +68,7 @@ const start = async () => {
   sock.ev.on("messages.upsert", async (m) => {
 const time = moment().tz("Africa/Nairobi").format("HH:mm:ss");
 
-const { ownerNumber, ownerName, botName, otakudesuUrl, spikexc } = require("./config.json");
+const { ownerNumber, ownerName, botName, otakudesuUrl, xcoders, git } = require("./emilia_setup.json");
 const ods = new Odesus(otakudesuUrl);
 
 if (!m.messages) return;
@@ -134,7 +134,7 @@ const fakeSend = async (teks, judul, isi, msg) => {
         body: isi,
         mediaType: 3,
         thumbnail: fakeThumb,
-        sourceUrl: 'https://github.com/mohalicious'
+        sourceUrl: 'https://github.com/gascomit'
       }
     }
   }, {
@@ -169,6 +169,64 @@ if (isQuotedImage || isQuotedVideo || isQuotedAudio || isQuotedSticker) {
   stream = await downloadContentFromMessage(msg.message[mediaType], mediaType.replace('Message', '')).catch(console.error);
 }   
 
+async function list_surah() {
+  let { data } = await axios.get('https://litequran.net/')
+  const $ = cheerio.load(data)
+  const Result = []
+  $('body > main > ol > li:nth-child(n)').each((i, e) => {
+    const name_surah = $(e).find('a').text()
+    const link = 'https://litequran.net/' + $(e).find('a').attr('href')
+    Result.push({
+      link,
+      name_surah,
+    });
+  });
+  return Result
+}
+
+async function surah_List() {
+  const surahList = await list_surah();
+  let response = "Daftar Semua Surah:\n\n";
+  surahList.forEach((surah, index) => {
+    response += `${index + 1}. ${surah.name_surah}\n`;
+  });
+  return response;
+}
+
+async function litequran(link) {
+  let { data } = await axios.get(link)
+  const $ = cheerio.load(data)
+  const Result = []
+  const Isi = []
+  var surah = $('body > main > article > h1').text()
+  var bismillah = $('body > main > article > p').text()
+  $('body > main > article > ol > li:nth-child(n)').each((i, e) => {
+    const arabic = $(e).find('p.arabic').text()
+    const baca = $(e).find('p.translate').text()
+    const arti = $(e).find('p.meaning').text()
+    Isi.push({
+      arabic,
+      baca,
+      arti,
+    });
+  });
+  Result.push({ surah, bismillah }, Isi)
+  return Result
+}
+
+async function surah_quran(surahIndex) {
+  const surahList = await list_surah();
+  if (surahIndex < 1 || surahIndex > surahList.length) {
+    return "Nomor surah tidak valid.";
+  }
+  const selectedSurah = surahList[surahIndex - 1];
+  const surahContent = await litequran(selectedSurah.link);
+  let response = `Surah ${surahContent[0].surah}\n\n`;
+  surahContent[1].forEach((ayah) => {
+    response += `${ayah.arabic}\n${ayah.baca}\n${ayah.arti}\n\n`;
+  });
+  return response;
+}
 
 async function modsFouad() {
   const userAgent =
@@ -212,6 +270,27 @@ async function modsFouad() {
   });
 }
 
+async function searchWattpad(q) {
+  try {
+    const response = await axios.get(`http://xyros.my.id/api/wattpad?keyword=${q}`);
+    const data = response.data;
+    return data;
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
+
+async function funcArtiNama(name) {
+  try {
+    const response = await fetch(`http://xyros.my.id/api/artinama?keyword=${name}`);
+    const result = await response.json();
+    return result.arti;
+  } catch (error) {
+    console.error("An error occurred in obtaining result artname:", error);
+    return "An error occurred in obtaining result artname.";
+  }
+}
 
 async function youtubeSearch(query) {
   return new Promise(async (resolve, reject) => {
@@ -286,6 +365,22 @@ async function instagram(url) {
     });
   });
   return result;
+}
+
+async function zoro(q) {
+  const res = await axios.get(`https://zoro.to/search?keyword=${q}`);
+  const $ = cheerio.load(res.data);
+  const arrays = [];
+
+  $("div.flw-item").each(function () {
+    const title = $(this).find("div.film-detail > h3 > a").attr("title");
+    const type = $(this).find("div.film-detail > div.fd-infor > span:nth-child(1)").text();
+    const duration = $(this).find("div.film-detail > div.fd-infor > span.fdi-item.fdi-duration").text();
+    const link = "https://zoro.to" + $(this).find("div.film-detail > h3 > a").attr("href");
+    arrays.push({ title, type, duration, link });
+  });
+
+  return arrays;
 }
 
 async function getBase64(url) {
@@ -368,36 +463,32 @@ const runtime = function (seconds) {
 case "menu":
 case "help":
 case "?":
-  sock.sendMessage(from, { 
-  caption: `
-  
- Hi I'm *${botName}*
- 
-*≡ Commands*
+  sock.sendMessage(from, {
+    caption: `
+Hi there I'm *${botName}* here!
 
-┌─⊷ *Downloader*
-▢ igdl, igs, mediafire, tiktok, twitter, ytmp3, ytmp4, yts
-└─────────────
+*Available Commands:*
 
-┌─⊷ *Moderation*
-▢ close, closetime, demote, hidetag, kick, opentime, open, promote, setdesc, setname
-└─────────────
+  *Downloader*
 
-┌─⊷ *Maker*
-▢ comic, runner, starwars, style, water, gumball, paper, bastard, woi, joebiden, erun
-└─────────────
+❐ igdl, igs, mediafire, tiktok, twitter, ytmp3, ytmp4, yts
 
-┌─⊷ *General*
-▢ weather, ai, foudinfo, get, truecaller, lyrics, owner, runtime, shortlink, ssweb, sticker, waifu
+  *Moderation*
 
-        *𝑁𝑜𝑡𝑒:*
-Moon uses Baileys Library (@whiskeysockets/baileys)\nDo Not Call or Spam The Bot🦄\nBot Is still under Development So Expect Random Bugs And Errors\nPowered By Dreaded Bot
+❐ close, closetime, demote, hidetag, kick, opentime, open, promote, setdesc, setname
+
+  *Maker*
+
+❐ comic, runner, starwars, style, water, gumball, paper, bastard, woi, joebiden, erun
+
+  *General*
+
+❐ Bible, weather, ai, desuinfo, foudinfo, get, earthquack, truecaller, lyriics, owner, ping, runtime, shortlink, ssweb, sticker, tsunami, waifu, wpsearch, zorosearch
     `,
-   image: {
-      url: "https://telegra.ph/file/a071917ffbe98093eba89.jpg",
+    image: {
+      url: "https://i.ibb.co/RpjBXfW/43f1be3eba773a3e91b2a28e55037935.jpg",
     },
   }, { quoted: msg });
-
 //Downloader
   break;
 case "igdl":
@@ -750,7 +841,7 @@ case "cl":
 case "runner-logo":
 case "rl":
   if (!q) {
-    return reply(`Example:\n${prefix + command} Malik`);
+    return reply(`Example:\n${prefix + command} Emilia`);
   }
   fakeSend(`\nWait a minute..\n`);
   sock.sendMessage(from, {
@@ -763,7 +854,7 @@ case "rl":
 case "starwars-logo":
 case "sl":
   if (!q) {
-    return reply(`Example:\n${prefix + command} Malik`);
+    return reply(`Example:\n${prefix + command} Emilia`);
   }
   fakeSend(`\nWait a minute..\n`);
   sock.sendMessage(from, {
@@ -776,7 +867,7 @@ case "sl":
 case "style-logo":
 case "style":
   if (!q) {
-    return reply(`Example:\n${prefix + command} Malik`);
+    return reply(`Example:\n${prefix + command} Emilia`);
   }
   fakeSend(`\nWait a minute..\n`);
   sock.sendMessage(from, {
@@ -786,9 +877,57 @@ case "style":
     },
   }, { quoted: msg });
   break;
+case "tolol":
+  if (!q) {
+    return reply(`Example:\n${prefix + command} Emilia`);
+  }
+  fakeSend(`\nWait a minute..\n`);
+  sock.sendMessage(from, {
+    caption: q,
+    image: {
+      url: `https://tolol.ibnux.com/img.php?nama=${q}`,
+    },
+  }, { quoted: msg });
+  break;
+case "kertas":
+  if (!q) {
+    return reply(`Example:\n${prefix + command} Love You`);
+  }
+  fakeSend(`\nWait a minute..\n`);
+  sock.sendMessage(from, {
+    caption: q,
+    image: {
+      url: `https://mfarels.my.id/api/kertas?text=${q}`,
+    },
+  }, { quoted: msg });
+  break;
+case "bajingan":
+  if (!q) {
+    return reply(`Example:\n${prefix + command} Wahyu`);
+  }
+  fakeSend(`\nWait a minute..\n`);
+  sock.sendMessage(from, {
+    caption: q,
+    image: {
+      url: `https://mfarels.my.id/api/bajinganlo?text=${q}`,
+    },
+  }, { quoted: msg });
+  break;
+case "woi":
+  if (!q) {
+    return reply(`Example:\n${prefix + command} Woi Till`);
+  }
+  fakeSend(`\nWait a minute..\n`);
+  sock.sendMessage(from, {
+    caption: q,
+    image: {
+      url: `https://mfarels.my.id/api/woi?text=${q}`,
+    },
+  }, { quoted: msg });
+  break;
 case "joebiden":
   if (!q) {
-    return reply(`Example:\n${prefix + command} Malik`);
+    return reply(`Example:\n${prefix + command} Emilia`);
   }
   fakeSend(`\nWait a minute..\n`);
   sock.sendMessage(from, {
@@ -801,7 +940,7 @@ case "joebiden":
 case "water-logo":
 case "wl":
   if (!q) {
-    return reply(`Example:\n${prefix + command} Malik`);
+    return reply(`Example:\n${prefix + command} Emilia`);
   }
   fakeSend(`\nWait a minute..\n`);
   sock.sendMessage(from, {
@@ -813,7 +952,7 @@ case "wl":
   break;
 case "ledrun":
   if (!q) {
-    return reply(`Example:\n${prefix + command} Naruto WhatsApp Bot`);
+    return reply(`Example:\n${prefix + command} Emilia WhatsApp Bot`);
   }
   fakeSend(`\nWait a minute..\n`);
   sock.sendMessage(from, {
@@ -852,7 +991,7 @@ case "alkitab":
   break;
 case "artname":
   if (!q) {
-    return reply(`Example:\n${prefix + command} Nathanael`);
+    return reply(`Example:\n${prefix + command} Benson`);
   }
   const name = q;
   const artiNama = await funcArtiNama(name);
@@ -874,6 +1013,8 @@ case "cuaca":
     })
   );
   break;
+case "chatgpt":
+case "chatai":
 case "ai":
   if (!q) {
     return reply(`Example:\n${prefix + command} What is coding?`);
@@ -886,6 +1027,54 @@ case "ai":
     .catch((err) => {
       reply(err);
     });
+  break;
+case "desuinfo":
+  if (!q) {
+    return reply(`Example:\n${prefix + command} URL`);
+  }
+  const slug = await resolveDesuUrl(q);
+  if (!slug || slug.type !== "anime") {
+    return;
+  }
+  const anime = await ods.getAnimeInfo(slug);
+  if (!anime) {
+    return;
+  }
+  anime.episodes = anime.episodes.filter((x) => !/batch/gi.test(x.q));
+  const episodeList = anime.episodes
+    .slice(0, 5)
+    .map((e, i) => `     ${i + 1}. ${e.title} (${e.q})`)
+    .join("\n");
+  await sock.sendMessage(from, {
+    text: `*${anime.name}*\n\n${anime.synopsis}\n\n*Genres:*\n${anime.genres.map((x) => x.name).join(", ")}\n\n*Status:*\n${anime.status}\n\n*Rating:*\n${anime.rating}\n\n*Episodes:*\n${episodeList}\n\n*Duration:*\n${
+      anime.duration
+    }\n\n*Release:*\n${anime.releasedAt}\n\n*Studio:*\n${anime.studio}\n\n*Link:*\n${anime.q}`,
+    quoted: msg,
+    image: {
+      url: anime.image,
+    },
+  });
+  break;
+case "desusearch":
+  if (!q) {
+    return reply(`Example:\n${prefix + command} Kimetsu no Yaiba`);
+  }
+  const results = await ods.search(q);
+  if (!results.length) {
+    await sock.sendMessage(
+      from,
+      {
+        text: "No results found",
+      },
+      { quoted: msg }
+    );
+    return;
+  }
+  const searchResultsText = results.map((r, i) => `${i + 1}. ${r.name} (${r.url})`).join("\n\n");
+  await sock.sendMessage(from, {
+    text: `*Search results for ${q}*\n\n${searchResultsText}`,
+    quoted: msg,
+  });
   break;
 case 'fouadinfo':
   const result = await modsFouad();
@@ -907,7 +1096,7 @@ case 'fouadinfo':
 case "get":
 case "fetch":
   if (!q) {
-    return reply(`Example:\n${prefix + command} https://github.com/mohalicious`);
+    return reply(`Example:\n${prefix + command} https://github.com/gascomit`);
   }
   if (!/^https?:\/\//.test(q)) {
     return reply("URL is Invalid!");
@@ -935,7 +1124,20 @@ case "fetch":
       .catch((error) => reply("Error", error));
   }
   break;
-case "lyrics":
+case "infogempa":
+  const { ressult } = await clph.info.gempa();
+  const image = {
+    url: ressult.image,
+  };
+  delete ressult.image;
+  sock.sendMessage(from, {
+    image,
+    caption: parseRes(ressult, {
+      title: "Info Gempa",
+    }),
+  });
+  break;
+case "lirik":
   if (!q) {
     return reply(`Example:\n${prefix + command} One Last Time : Ariana`);
   }
@@ -950,6 +1152,18 @@ case "lyrics":
     .catch((err) => {
       fakeSend(err);
     });
+  break;
+case "listsurah":
+  const resSurah = await surah_List();
+  fakeSend(resSurah);
+  break;
+case "listquran":
+  if (!q) {
+    return reply(`Example:\n${prefix + command} 1`);
+  }
+  const surahIndex = parseInt(q);
+  const response = await surah_quran(surahIndex);
+  fakeSend(response);
   break;
 case "owner":
   const vcard =
@@ -969,6 +1183,76 @@ case "owner":
 case "runtime":
 case "tes":
   fakeSend(`${runtime(process.uptime())}`);
+  break;
+case "ping": {
+  const used = process.memoryUsage();
+  const cpus = os.cpus().map((cpu) => {
+    cpu.total = Object.keys(cpu.times).reduce((last, type) => last + cpu.times[type], 0);
+    return cpu;
+  });
+  const cpu = cpus.reduce(
+    (last, cpu, _, { length }) => {
+      last.total += cpu.total;
+      last.speed += cpu.speed / length;
+      last.times.user += cpu.times.user;
+      last.times.nice += cpu.times.nice;
+      last.times.sys += cpu.times.sys;
+      last.times.idle += cpu.times.idle;
+      last.times.irq += cpu.times.irq;
+      return last;
+    },
+    {
+      speed: 0,
+      total: 0,
+      times: {
+        user: 0,
+        nice: 0,
+        sys: 0,
+        idle: 0,
+        irq: 0,
+      },
+    }
+  );
+  let timestamp = speed();
+  let latensi = speed() - timestamp;
+  let neww = performance.now();
+  let oldd = performance.now();
+  let respon = `Hey ${senderName} 👋🏽`;
+  respon += `\n`;
+  respon += `🚀 RESPONSE  ${latensi.toFixed(4)}\n`;
+  respon += `💡 ACTIVE: ${runtime(process.uptime())}\n`;
+  respon += `💾 RAM: ${format(os.totalmem() - os.freemem())} / ${format(os.totalmem())}\n`;
+  respon += `💻 CPU: ${cpus.length} Core(s)\n`;
+  respon += `🌐 OS: ${os.version()}\n`;
+  respon += `\n`;
+  respon += `_NodeJS Memory Usage_\n`;
+  respon += `${Object.keys(used)
+    .map((key, _, arr) => `${key.padEnd(Math.max(...arr.map((v) => v.length)), " ")}: ${format(used[key])}`)
+    .join("\n")}\n\n${
+    cpus[0]
+      ? `_Total CPU Usage_\n${cpus[0].model.trim()} (${cpu.speed} MHZ)\n${Object.keys(cpu.times)
+          .map((type) => `- *${(type + "*").padEnd(6)}: ${((100 * cpu.times[type]) / cpu.total).toFixed(2)}%`)
+          .join("\n")}\n_CPU Core(s) Usage (${cpus.length} Core CPU)_\n${cpus
+          .map(
+            (cpu, i) =>
+              `${i + 1}. ${cpu.model.trim()} (${cpu.speed} MHZ)\n${Object.keys(cpu.times)
+                .map((type) => `- *${(type + "*").padEnd(6)}: ${((100 * cpu.times[type]) / cpu.total).toFixed(2)}%`)
+                .join("\n")}`
+          )
+          .join("\n\n")}`
+      : "https://i.ibb.co/RpjBXfW/43f1be3eba773a3e91b2a28e55037935.jpg"
+  }`.trim();
+  sock.sendMessage(from, { image: { url: "" }, caption: respon });
+}
+break;
+case "hujan":
+case "gabut":
+  (async () => {
+    const { key } = await sock.sendMessage(from, { text: '☁' }, { quoted: msg });
+    await sock.sendMessage(from, { text: '🌧', edit: key });
+    await sock.sendMessage(from, { text: '⛈️', edit: key });
+    await sock.sendMessage(from, { text: '🌩', edit: key });
+  })();
   break;
 case "shortlink":
   if (!q) {
@@ -1052,6 +1336,40 @@ case "s":
       .save(`./${sender}.webp`);
   }
   break;
+case "tohuruf":
+  if (!q) {
+    return reply(`Example:\n${prefix + command} 254718241545`)}
+  try {
+    const quere = q
+    const convertes = await tooHurf(quere)
+    reply(`
+      *•> Number:* ${quere}
+      *•> Alphabet:* ${convertes}
+    `)
+  } catch {
+    return reply("Sorry, an error occurred")
+  }
+  break;
+case "tsunami":
+  try {
+    const data = await dl.tsunami();
+    let response = "Latest tsunami information:\n\n";
+    for (const tsunami of data) {
+      response += `Date: ${tsunami.date}\n`;
+      response += `Time: ${tsunami.time}\n`;
+      response += `Location: ${tsunami.location}\n`;
+      response += `Magnitude: ${tsunami.magnitude}\n`;
+      response += `Depth: ${tsunami.depth}\n`;
+      response += `Info: ${tsunami.info}\n\n`;
+    }
+    // Send the response message
+    reply(response);
+  } catch (error) {
+    // Handle any errors
+    console.error("Error:", error.message);
+    reply("An error occurred while fetching tsunami data.");
+  }
+  break;
 case "waifu":
   try {
     const response = await axios.get("https://waifu.pics/api/sfw/waifu");
@@ -1068,9 +1386,9 @@ case "waifu":
     console.error("Error:", error);
     reply("Sorry, there was an error loading the waifu image.");
   }
-            break
+  break;
 case "truecaller":
-  if (!q || !q.startsWith("+")) return reply(`Example:\n${prefix + command} +254796032440`);
+  if (!q || !q.startsWith("+")) return reply(`Example:\n${prefix + command} +254718241545`);
   reply(`Please wait a moment, your request is being processed`);
   const anu = await fetch(`https://outrageous-fish-dress.cyclic.app/api/other/truecaller?number=${q}`);
   let api = await anu.json();
@@ -1087,7 +1405,49 @@ case "truecaller":
 *• Company*: ${api.data.data[0].phones[0].carrier}
 *• Type*: ${api.data.data[0].phones[0].type}`;
   reply(anuress);
-
+  break;
+case "wpsearch":
+case "wattpad":
+  if (!q) return reply(`Example:\n${prefix + command} query`);
+  const data = await searchWattpad(q);
+  if (data) {
+    const { desk, gambar, status, title } = data;
+    const result = `
+    *${title}*
+    ${desk}
+    Status: ${status}
+    Pictures: ${gambar}
+  `;
+    sock.sendMessage(
+      from,
+      {
+        caption: result,
+        image: {
+          url: `${gambar}`,
+        },
+      },
+      { quoted: msg }
+    );
+  } else {
+    reply("Sorry, an error occurred.");
+  }
+  break;
+case "zorosearch":
+  if (!q) {
+    reply(`Example:\n${prefix + command} Naruto`);
+    break;
+  }
+  const ress = await zoro(q);
+  if (ress.length > 0) {
+    let replyMsg = "🦄:\n";
+    for (let i = 0; i < ress.length; i++) {
+      const { title, type, duration, link } = ress[i];
+      replyMsg += `\n${i + 1}. ${title}\nType: ${type}\nDuration: ${duration}\nLink: ${link}\n`;
+    }
+    reply(replyMsg);
+  } else {
+    sock.sendMessage(from, "No results found.", msg);
+  }
   break;
 default:
   if (!isOwner) return;
@@ -1116,4 +1476,16 @@ default:
 };
 start();
 
-//Thank You🦄
+//Thank You🦄 #Emilia
+/*
+
+A 25 years old Kenyan programmer, Tag: GasComIT is my sudo name. 
+I am actively looking for myself in the field of AI (Artificial intelligence ) and web design / development. 
+For the past few years I have been writting AI projects in Python and Javascript. 
+I have a development experience in Node.js. I have a personal GitHub account, 
+a GithHub organisation , a personal telegram Channel and another website where 
+i post fascinating articles sometime.
+My tasks for the next few years are to improve my spanish level, 
+prepare for algorithmic and system design interviews. 
+
+*/

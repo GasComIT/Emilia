@@ -30,23 +30,23 @@
     "xfarr-api": "^2.0.0",
     "yt-search": "^2.10.4"
   },
-  "name": "moon-bot",
+  "name": "Emilia",
   "description": "A Simple Whatsapp Bot",
   "version": "1.0.0",
   "main": "index.js",
   "devDependencies": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mohalicious/moon-bot.git"
+    "url": "git+https://github.com/gascomit/emilia.git"
   },
   "keywords": [
     "dreaded",
     "spike"
   ],
-  "author": "Mohamed/Fortunatus",
+  "author": "Benson/Gascomit",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/mohalicious/moon-bot/issues"
+    "url": "https://github.com/gascomit/emilia/issues"
   },
-  "homepage": "https://github.com/mohalicious/moon-bot#readme"
+  "homepage": "https://github.com/gascomit/emilia#readme"
 }

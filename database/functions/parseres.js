@@ -1,6 +1,6 @@
 
 const botinfo = {
-  botname: "Naruto",
+  botname: "Emilia",
   unicode: {
     head: "⬣",
     list: "⬡",
