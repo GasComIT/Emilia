@@ -68,7 +68,7 @@ const start = async () => {
   sock.ev.on("messages.upsert", async (m) => {
 const time = moment().tz("Africa/Nairobi").format("HH:mm:ss");
 
-const { ownerNumber, ownerName, botName, otakudesuUrl, xcoders, git } = require("./emilia_setup.json");
+const { ownerNumber, ownerName, botName, otakudesuUrl, xcoders, git } = require("./database/functions/emilia_setup.json");
 const ods = new Odesus(otakudesuUrl);
 
 if (!m.messages) return;
@@ -460,6 +460,7 @@ const runtime = function (seconds) {
     if (isGroup && isCmd) console.log(color(`[ ${time} ]`, "white"), color("[ COMMAND ]", "aqua"), color(body, "white"), "from", color(senderNumber, "yellow"), "in", color(groupName, "yellow"));
 
     switch (command) {
+    // menu
 case "menu":
 case "help":
 case "?":
@@ -627,7 +628,7 @@ case "close":
     return reply("For group admins only!");
   }
   if (!isBotGroupAdmins) {
-    return reply("Bot must be and admin first!");
+    return reply("Bot Emilia must be an admin first!");
   }
   await sock.groupSettingUpdate(from, "announcement");
   reply("Success.");
@@ -641,7 +642,7 @@ case "ct":
     return reply("For group admins only!");
   }
   if (!isBotGroupAdmins) {
-    return reply("Bot must be an admin first!");
+    return reply("Bot Emilia must be an admin first!");
   }
   if (!args[1]) {
     return reply(`*Options:*\nseconds\nminutes\ntime\nday\n\n*Example:*\n${prefix + command} 20 seconds`);
@@ -679,7 +680,7 @@ case "dethrone":
     return reply("For group admins only!");
   }
   if (!isBotGroupAdmins) {
-    return reply("Bot must be an admin first!");
+    return reply("Bot Emilia must be an admin first!");
   }
   if (!msg.message.extendedTextMessage) {
     return reply("Reply target!");
@@ -690,7 +691,7 @@ case "dethrone":
   break;
 case "hidetag":
   if (!q) {
-    return reply(`Example:\n${prefix + command} Hidetag Malaaya`);
+    return reply(`Example:\n${prefix + command} Hidetag Samita`);
   }
   if (!isGroup) {
     return reply("For use within groups only!");
@@ -710,10 +711,10 @@ case "rm":
     return reply("For group admins only!");
   }
   if (!isBotGroupAdmins) {
-    return reply("Bot must be an admin first!");
+    return reply("Bot Emilia must be an admin first!");
   }
   if (!msg.message.extendedTextMessage) {
-    return reply("Reply targetnya!");
+    return reply("Reply target user!");
   }
   remove = msg.message.extendedTextMessage.contextInfo.participant;
   await sock.groupParticipantsUpdate(from, [remove], "remove");
@@ -727,7 +728,7 @@ case "ot":
     return reply("For group admins only!");
   }
   if (!isBotGroupAdmins) {
-    return reply("Bot must be an admin first!");
+    return reply("Bot Emilia must be an admin first!");
   }
   if (!args[1]) {
     return reply(`*Options:*\nseconds\nminutes\ntime\nday\n\n*Example:*\n${prefix + command} 20 seconds`);
@@ -763,7 +764,7 @@ case "open":
     return reply("For group admins only!");
   }
   if (!isBotGroupAdmins) {
-    return reply("Bot must be an admin first!");
+    return reply("Bot Emilia must be an admin first!");
   }
   await sock.groupSettingUpdate(from, "not_announcement");
   reply("Success.");
@@ -777,7 +778,7 @@ case "pme":
     return reply("For group admins only!");
   }
   if (!isBotGroupAdmins) {
-    return reply("Bot must be an admin first!");
+    return reply("Bot Emilia must be an admin first!");
   }
   if (!msg.message.extendedTextMessage) {
     return reply("Reply target!");
@@ -796,7 +797,7 @@ case "sd":
     return reply("For group admins only!");
   }
   if (!isBotGroupAdmins) {
-    return reply("Bot must be an admin first!");
+    return reply("Bot Emilia must be an admin first!");
   }
   if (!q) {
     return reply(`Example:\n${prefix + command} Admin powerful`);
@@ -815,7 +816,7 @@ case "sn":
     return reply("For group admins only!");
   }
   if (!isBotGroupAdmins) {
-    return reply("Bot must be an admin first!");
+    return reply("Bot Emilia must be an admin first!");
   }
   if (!q) {
     return reply(`Example:\n${prefix + command} Naruto WhatsApp Bot`);
@@ -1077,6 +1078,7 @@ case "desusearch":
   });
   break;
 case 'fouadinfo':
+case 'mods':
   const result = await modsFouad();
   let replyMessage = '';
   if (result.com_whatsapp) {

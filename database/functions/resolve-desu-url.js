@@ -1,5 +1,5 @@
 const { Util } = require('odesus')
-const { otakudesuUrl } = require('./config.json')
+const { otakudesuUrl } = require('./emilia_setup.json')
 
 module.exports = async (url) => {
   try {

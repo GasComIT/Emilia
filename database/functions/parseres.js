@@ -1,4 +1,5 @@
-
+// Thanks a bunch Edward (Dad) and Naomi (Mum) for raising me.
+// Thanks Emilia for being in my life.... I'm proud of you.
 const botinfo = {
   botname: "Emilia",
   unicode: {
